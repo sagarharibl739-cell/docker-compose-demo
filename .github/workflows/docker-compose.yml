@@ -1,17 +1,50 @@
-services:
+name: Docker Compose CI
 
-  app:
-    build: .
-    container_name: python-app
-    ports:
-      - "5000:5000"
-    environment:
-      REDIS_HOST: redis
-    depends_on:
-      - redis
+on:
+  push:
+    branches:
+      - main
 
-  redis:
-    image: redis:7-alpine
-    container_name: redis-server
-    ports:
-      - "6379:6379"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+
+  docker-compose-build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Check Docker version
+        run: docker --version
+
+      - name: Check Docker Compose version
+        run: docker compose version
+
+      - name: Build Docker Compose application
+        run: docker compose build
+
+      - name: Start containers
+        run: docker compose up -d
+
+      - name: Check running containers
+        run: docker compose ps
+
+      - name: Wait for application
+        run: sleep 10
+
+      - name: Test application
+        run: curl --fail http://localhost:5000
+
+      - name: Show application logs
+        if: always()
+        run: docker compose logs
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down
